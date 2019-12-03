@@ -26,13 +26,13 @@ Nexts.Js es básicamente un pequeño framework para renderizar nuestras vistas d
 
 ### Styled JSX
 
-- Es mas acorde a React
-- Evitamos problemas al escalar
-- Escribimos CSS3 como siempre
-- Solo aplica al componente
-- Tampoco aplica a componentes internos y externos
+1. Es mas acorde a React
+2. Evitamos problemas al escalar
+3. Escribimos CSS3 como siempre
+4. Solo aplica al componente
+5. Tampoco aplica a componentes internos y externos
 
-- pages/index.js
+- **pages/index.js**
 
 ```jsx
 import React, { Component } from 'react'
@@ -84,12 +84,14 @@ Carga el contenido principal
 ➜  yarn add isomorphic-unfetch --exact
 ```
 
-- pages/index.js
+- **pages/index.js**
 
 ```jsx
 import React, { Component } from 'react';
-import Link from 'next/link';
 import fetch from 'isomorphic-unfetch';
+
+import Layout from '../components/Layout';
+import ChannelGrid from '../components/ChannelGrid';
 
 export default class Home extends Component {
   static async getInitialProps() {
@@ -103,13 +105,82 @@ export default class Home extends Component {
     const { channels } = this.props;
 
     return (
-      <>
-        <header>Podcasts</header>
+      <Layout title="Podcasts App">
+        <ChannelGrid channels={channels} />
+      </Layout>
+    )
+  }
+}
+```
 
+- **components/Layout.js**
+
+```jsx
+import React, { Component } from 'react';
+import Link from 'next/link';
+import Head from 'next/head';
+
+export default class Layout extends Component {
+  render() {
+    const { children, title } = this.props;
+
+    return (
+      <>
+        <Head>
+          <title>{title}</title>
+        </Head>
+
+        <header>
+          <Link href="/">
+            <a>Podcasts</a>
+          </Link>
+        </header>
+
+        {children}
+
+        <style jsx>{`
+          header {
+            color: #fff;
+            background-color: #8756ca;
+            padding: 15px;
+            text-align: center;
+          }
+
+          header a {
+            color: white;
+            text-decoration: none;
+          }
+        `}</style>
+
+        <style jsx global>{`
+          body {
+            margin: 0;
+            background-color: white;
+            font-family: system-ui
+          }
+        `}</style>
+      </>
+    )
+  }
+}
+```
+
+- **components/ChannelGrid.js**
+
+```jsx
+import React, { Component } from 'react';
+import Link from 'next/link';
+
+export default class ChannelGrid extends Component {
+  render() {
+    const { channels } = this.props;
+
+    return (
+      <>
         <div className="channels">
         {
           channels.map(channel =>
-            <Link href={`/channel?id=${channel.id}`}>
+            <Link href={`/channel?id=${channel.id}`} key={channel.id}>
               <a className="channel">
                 <img src={channel.urls.logo_image.original} alt=""/>
                 <h2>{channel.title}</h2>
@@ -120,17 +191,15 @@ export default class Home extends Component {
         </div>
         
         <style jsx>{`
-          header {
-            color: #fff;
-            background-color: #8756ca;
-            padding: 15px;
-            text-align: center;
-          }
           .channels {
             display: grid;
             grid-gap: 15px;
             padding: 15px;
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+          }
+          .channels a {
+            color: #455A64;
+            text-decoration: none;
           }
           .channel {
             display: block;
@@ -145,24 +214,20 @@ export default class Home extends Component {
             padding: 5px;
           }
         `}</style>
-        <style jsx global>{`
-          body {
-            margin: 0;
-            background-color: white;
-            font-family: system-ui
-          }
-        `}</style>
       </>
     )
   }
 }
 ```
 
-- pages/channel.js
+- **pages/channel.js**
 
 ```jsx
 import React, { Component } from 'react';
-import Link from 'next/link';
+
+import Layout from '../components/Layout';
+import ChannelGrid from '../components/ChannelGrid';
+import PodcastList from '../components/PodcastList';
 
 export default class Channel extends Component {
   static async getInitialProps({ query }) {
@@ -185,9 +250,7 @@ export default class Channel extends Component {
     const { channel, audioClips, series } = this.props;
 
     return (
-      <>
-        <header>Podcasts</header>
-
+      <Layout title={channel.title}>
         <div className="banner" style={{ backgroundImage: `url(${channel.urls.banner_image.original})` }}></div>
 
         <h1>{channel.title}</h1>
@@ -197,21 +260,46 @@ export default class Channel extends Component {
             <div>
               <h2>Series</h2>
               <div className="channels">
-                {
-                  series.map(serie => (
-                    <Link href={`/channel?id=${ serie.id }`} key={serie.id}>
-                      <a className="channel">
-                        <img src={ serie.urls.logo_image.original } alt=""/>
-                        <h2>{ serie.title }</h2>
-                      </a>
-                    </Link>
-                  ))
-                }
+                <ChannelGrid channels={series} />
               </div>
             </div>
           )
         }
 
+        <PodcastList audioClips={audioClips} />
+
+        <style jsx>{`
+          .banner {
+            width: 100%;
+            padding-bottom: 25%;
+            background-position: 50% 50%;
+            background-size: cover;
+            background-color: #aaa;
+          }
+          
+          h1 {
+            font-weight: 600;
+            padding: 15px;
+          }
+        `}</style>
+      </Layout>
+    )
+  }
+}
+```
+
+- **components/PodcastList.js**
+
+```jsx
+import React, { Component } from 'react';
+import Link from 'next/link';
+
+export default class PodcastList extends Component {
+  render() {
+    const { audioClips } = this.props;
+
+    return (
+      <>
         <h2>Últimos Podcasts</h2>
         {
           audioClips.map(clip => (
@@ -227,42 +315,6 @@ export default class Channel extends Component {
         }
 
         <style jsx>{`
-          header {
-            color: #fff;
-            background: #8756ca;
-            padding: 15px;
-            text-align: center;
-          }
-
-          .banner {
-            width: 100%;
-            padding-bottom: 25%;
-            background-position: 50% 50%;
-            background-size: cover;
-            background-color: #aaa;
-          }
-
-          .channels {
-            display: grid;
-            grid-gap: 15px;
-            padding: 15px;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-          }
-          a.channel {
-            display: block;
-            margin-bottom: 0.5em;
-            color: #333;
-            text-decoration: none;
-          }
-          .channel img {
-            border-radius: 3px;
-            box-shadow: 0px 2px 6px rgba(0,0,0,0.15);
-            width: 100%;
-          }
-          h1 {
-            font-weight: 600;
-            padding: 15px;
-          }
           h2 {
             padding: 5px;
             font-size: 0.9em;
@@ -270,7 +322,6 @@ export default class Channel extends Component {
             margin: 0;
             text-align: center;
           }
-
           .podcast {
             display: block;
             text-decoration: none;
@@ -291,25 +342,19 @@ export default class Channel extends Component {
             font-size: 0.8em;
           }
         `}</style>
-
-        <style jsx global>{`
-          body {
-            margin: 0;
-            font-family: system-ui;
-            background: white;
-          }
-        `}</style>
       </>
     )
   }
 }
 ```
 
-- pages/podcast.js
+- **pages/podcast.js**
 
 ```jsx
 import React, { Component } from 'react';
 import Link from 'next/link';
+
+import Layout from '../components/Layout';
 
 export default class Podcast extends Component {
   static async getInitialProps({ query }) {
@@ -327,9 +372,7 @@ export default class Podcast extends Component {
     const { clip } = this.props;
 
     return (
-      <>
-        <header>Podcasts</header>
-
+      <Layout title={clip.title}>
         <div className="modal">
           <div className="clip">
             <nav>
@@ -345,7 +388,7 @@ export default class Podcast extends Component {
             <div className='player'>
               <h3>{ clip.title }</h3>
               <h6>{ clip.channel.title }</h6>
-              <audio controls autoPlay={true}>
+              <audio controls autoPlay={false}>
                 <source src={clip.urls.high_mp3} type='audio/mpeg' />
               </audio>
             </div>
@@ -412,15 +455,7 @@ export default class Podcast extends Component {
             z-index: 99999;
           }
         `}</style>
-
-        <style jsx global>{`
-          body {
-            margin: 0;
-            font-family: system-ui;
-            background: white;
-          }
-        `}</style>
-      </>
+      </Layout>
     )
   }
 }
